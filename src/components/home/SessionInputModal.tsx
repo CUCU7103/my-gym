@@ -15,19 +15,28 @@ export function SessionInputModal({ onConfirm, onCancel }: SessionInputModalProp
   const [label, setLabel] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 모달이 열릴 때 자동으로 입력창에 포커스
   useEffect(() => {
+    // 모달이 열릴 때 자동으로 입력창에 포커스
     inputRef.current?.focus()
-  }, [])
+
+    // 포커스 위치와 무관하게 Escape 키로 취소 처리
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+    }
+    document.addEventListener('keydown', handleGlobalKeyDown)
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [onCancel])
 
   const handleConfirm = () => {
     onConfirm(label.trim())
   }
 
-  // Enter 키로 확인, Escape 키로 취소
+  // Enter 키로 확인 (input에서만)
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleConfirm()
-    if (e.key === 'Escape') onCancel()
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleConfirm()
+    }
   }
 
   return (
