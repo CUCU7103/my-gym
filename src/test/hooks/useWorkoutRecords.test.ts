@@ -27,6 +27,8 @@ vi.mock('../../db/database', () => {
                 const idx = records.findIndex(r => r.id === item.id)
                 if (idx !== -1) records.splice(idx, 1)
               })
+              // 삭제된 건수를 반환해야 cancelToday의 'not_found' 경로가 동작함
+              return toDelete.length
             },
           }),
         }),
@@ -91,6 +93,17 @@ describe('useWorkoutRecords', () => {
     await act(async () => { await result.current.cancelToday() })
     expect(result.current.stats.isTodayRecorded).toBe(false)
     expect(result.current.stats.todaySessionCount).toBe(0)
+    vi.useRealTimers()
+  })
+
+  it('cancelToday - 오늘 기록이 없으면 not_found를 반환한다', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
+    const { result } = renderHook(() => useWorkoutRecords(3))
+    await act(async () => {})
+    let returnVal = ''
+    await act(async () => { returnVal = await result.current.cancelToday() })
+    expect(returnVal).toBe('not_found')
     vi.useRealTimers()
   })
 
