@@ -44,22 +44,34 @@ export function HomePage() {
   /** 세션 입력 확인 핸들러 */
   const handleSessionConfirm = useCallback(async (label: string) => {
     setShowSessionInput(false)
-    await recordToday(label || undefined)
+    try {
+      await recordToday(label || undefined)
+    } catch {
+      setToast('기록 중 오류가 발생했어요. 다시 시도해주세요')
+    }
   }, [recordToday])
 
   /** 운동 취소 확인 핸들러 — 오늘 전체 기록 삭제 */
   const handleCancelConfirm = useCallback(async () => {
     setShowCancelConfirm(false)
-    await cancelToday()
-    setToast('오늘 운동 기록을 취소했어요')
+    try {
+      const result = await cancelToday()
+      if (result === 'cancelled') setToast('오늘 운동 기록을 취소했어요')
+    } catch {
+      setToast('취소 중 오류가 발생했어요. 다시 시도해주세요')
+    }
   }, [cancelToday])
 
   /** 달력 날짜 선택 핸들러 - 과거 날짜 수동 기록 */
   const handleDateSelect = useCallback(async (date: string) => {
     const today = getTodayKST()
     if (date < today) {
-      const result = await addManual(date)
-      if (result === 'recorded') setToast(`${date} 기록을 추가했어요`)
+      try {
+        const result = await addManual(date)
+        if (result === 'recorded') setToast(`${date} 기록을 추가했어요`)
+      } catch {
+        setToast('기록 중 오류가 발생했어요. 다시 시도해주세요')
+      }
     }
   }, [addManual])
 
