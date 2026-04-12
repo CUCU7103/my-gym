@@ -3,11 +3,18 @@ import { formatDisplayDate, getTodayKST } from '../../utils/date'
 
 type TodayHeaderProps = {
   isTodayRecorded: boolean
+  sessionCount: number    // 오늘 세션 수
 }
 
 /** 오늘 날짜와 운동 완료 여부를 표시하는 헤더 컴포넌트 */
-export function TodayHeader({ isTodayRecorded }: TodayHeaderProps) {
+export function TodayHeader({ isTodayRecorded, sessionCount }: TodayHeaderProps) {
   const today = getTodayKST()
+
+  const statusText = () => {
+    if (!isTodayRecorded) return '아직 기록 안 했어요'
+    if (sessionCount === 1) return '✓ 오늘 운동 완료!'
+    return `✓ 오늘 운동 완료! (${sessionCount}회)`
+  }
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -25,7 +32,7 @@ export function TodayHeader({ isTodayRecorded }: TodayHeaderProps) {
         border: `1px solid ${isTodayRecorded ? 'rgba(59,130,246,0.3)' : 'var(--border)'}`,
         color: isTodayRecorded ? 'var(--blue)' : 'var(--text-secondary)',
       }}>
-        {isTodayRecorded ? '✓ 오늘 운동 완료!' : '아직 기록 안 했어요'}
+        {statusText()}
       </span>
     </div>
   )
