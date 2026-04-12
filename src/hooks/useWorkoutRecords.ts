@@ -13,24 +13,27 @@ import {
 function calcStats(records: WorkoutRecord[], weeklyGoal: number): WorkoutStats {
   const today = getTodayKST()
   const recent7 = getRecent7DayDates()
-  // 빠른 조회를 위해 날짜 Set 생성
+  // 날짜별 기록 여부를 위한 Set (recent7Days용)
   const dateSet = new Set(records.map(r => r.recordedDate))
 
-  // 이번 주 기록 수 계산
+  // 이번 주 세션 수 (날짜 중복 허용, 세션 기준)
   const weeklyCount = records.filter(r => isThisWeekKST(r.recordedDate)).length
-  // 이번 달 기록 수 계산
+  // 이번 달 세션 수
   const monthlyCount = records.filter(r => isThisMonthKST(r.recordedDate)).length
+  // 오늘 세션 수
+  const todaySessionCount = records.filter(r => r.recordedDate === today).length
 
   return {
     weeklyCount,
     monthlyCount,
     totalCount: records.length,
-    // 최근 7일 각 날짜에 기록이 있는지 boolean 배열로 반환
+    // 최근 7일 각 날짜에 기록이 1건 이상 있는지 boolean 배열로 반환
     recent7Days: recent7.map(d => dateSet.has(d)),
     // 주간 목표 달성률 (0 나눗셈 방지)
     weeklyGoalProgress: weeklyGoal > 0 ? weeklyCount / weeklyGoal : 0,
-    // 오늘 기록 여부
-    isTodayRecorded: dateSet.has(today),
+    // 오늘 1건 이상 기록 여부
+    isTodayRecorded: todaySessionCount > 0,
+    todaySessionCount,
   }
 }
 
@@ -44,36 +47,33 @@ export function useWorkoutRecords(weeklyGoal: number) {
     recent7Days: Array(7).fill(false),
     weeklyGoalProgress: 0,
     isTodayRecorded: false,
+    todaySessionCount: 0,
   })
 
   /** DB에서 전체 기록을 불러와 상태 갱신 */
   const refresh = useCallback(async () => {
     const all = await db.workoutRecords.toArray()
-    // 최신 날짜가 앞에 오도록 내림차순 정렬
-    all.sort((a, b) => b.recordedDate.localeCompare(a.recordedDate))
+    // 최신 시각 순으로 내림차순 정렬
+    all.sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))
     setRecords(all)
     setStats(calcStats(all, weeklyGoal))
   }, [weeklyGoal])
 
-  // 컴포넌트 마운트 또는 weeklyGoal 변경 시 데이터 로드
   useEffect(() => { refresh() }, [refresh])
 
   /**
-   * 오늘 날짜로 운동 기록 추가
-   * @returns 'recorded' - 성공, 'duplicate' - 이미 오늘 기록 존재
+   * 오늘 날짜로 운동 세션 추가 (같은 날 여러 번 호출 가능)
+   * @param label - 운동 종류 (선택, 예: '헬스', '복싱')
    */
-  const recordToday = useCallback(async (): Promise<'recorded' | 'duplicate'> => {
+  const recordToday = useCallback(async (label?: string): Promise<'recorded'> => {
     const today = getTodayKST()
-    // 오늘 날짜로 이미 기록이 있는지 확인
-    const existing = await db.workoutRecords.where('recordedDate').equals(today).first()
-    if (existing) return 'duplicate'
-
     const record: WorkoutRecord = {
       id: crypto.randomUUID(),
       recordedAt: new Date().toISOString(),
       recordedDate: today,
       createdAt: new Date().toISOString(),
       source: 'today_button',
+      label: label?.trim() || undefined,
     }
     await db.workoutRecords.add(record)
     await refresh()
@@ -81,17 +81,29 @@ export function useWorkoutRecords(weeklyGoal: number) {
   }, [refresh])
 
   /**
-   * 특정 날짜로 운동 기록 수동 추가
-   * @returns 'recorded' - 성공, 'duplicate' - 해당 날짜 기록 존재, 'future' - 미래 날짜
+   * 오늘 날짜 운동 기록 전체 취소
+   * @returns 'cancelled' - 성공, 'not_found' - 오늘 기록 없음
    */
-  const addManual = useCallback(async (date: string): Promise<'recorded' | 'duplicate' | 'future'> => {
+  const cancelToday = useCallback(async (): Promise<'cancelled' | 'not_found'> => {
     const today = getTodayKST()
-    // 미래 날짜는 추가 불가
-    if (date > today) return 'future'
+    // 오늘 날짜의 모든 기록을 조회 후 일괄 삭제
+    const todayRecords = await db.workoutRecords.where('recordedDate').equals(today).toArray()
+    if (todayRecords.length === 0) return 'not_found'
 
-    // 해당 날짜에 이미 기록이 있는지 확인
-    const existing = await db.workoutRecords.where('recordedDate').equals(date).first()
-    if (existing) return 'duplicate'
+    await Promise.all(todayRecords.map(r => db.workoutRecords.delete(r.id!)))
+    await refresh()
+    return 'cancelled'
+  }, [refresh])
+
+  /**
+   * 특정 날짜로 운동 세션 수동 추가 (같은 날 여러 번 호출 가능)
+   * @param date - YYYY-MM-DD 형식
+   * @param label - 운동 종류 (선택)
+   * @returns 'recorded' - 성공, 'future' - 미래 날짜
+   */
+  const addManual = useCallback(async (date: string, label?: string): Promise<'recorded' | 'future'> => {
+    const today = getTodayKST()
+    if (date > today) return 'future'
 
     const record: WorkoutRecord = {
       id: crypto.randomUUID(),
@@ -99,6 +111,7 @@ export function useWorkoutRecords(weeklyGoal: number) {
       recordedDate: date,
       createdAt: new Date().toISOString(),
       source: 'manual',
+      label: label?.trim() || undefined,
     }
     await db.workoutRecords.add(record)
     await refresh()
@@ -117,5 +130,5 @@ export function useWorkoutRecords(weeklyGoal: number) {
     await refresh()
   }, [refresh])
 
-  return { records, stats, recordToday, addManual, deleteRecord, deleteAllRecords }
+  return { records, stats, recordToday, cancelToday, addManual, deleteRecord, deleteAllRecords }
 }
