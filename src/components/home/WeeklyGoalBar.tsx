@@ -6,8 +6,8 @@ type WeeklyGoalBarProps = {
 
 /** 주간 목표 달성률을 프로그레스 바로 표시하는 컴포넌트 */
 export function WeeklyGoalBar({ weeklyCount, weeklyGoal }: WeeklyGoalBarProps) {
-  // 진행률 계산 (최대 100%)
-  const progress = Math.min(weeklyCount / weeklyGoal, 1)
+  // 진행률 계산 (최대 100%, weeklyGoal이 0인 경우 0으로 처리)
+  const progress = weeklyGoal > 0 ? Math.min(weeklyCount / weeklyGoal, 1) : 0
   const isDone = weeklyCount >= weeklyGoal
 
   return (

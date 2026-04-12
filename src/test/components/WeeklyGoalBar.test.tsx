@@ -13,4 +13,9 @@ describe('WeeklyGoalBar', () => {
     render(<WeeklyGoalBar weeklyCount={3} weeklyGoal={3} />)
     expect(screen.getByText(/주간 목표 달성/)).toBeInTheDocument()
   })
+
+  it('weeklyGoal이 0이어도 오류 없이 렌더링된다', () => {
+    render(<WeeklyGoalBar weeklyCount={0} weeklyGoal={0} />)
+    expect(screen.getByText('0 / 0회')).toBeInTheDocument()
+  })
 })

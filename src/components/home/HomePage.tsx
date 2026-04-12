@@ -1,5 +1,5 @@
 // src/components/home/HomePage.tsx
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useAppContext } from '../../context/AppContext'
 import { getTodayKST } from '../../utils/date'
 import { TodayHeader } from './TodayHeader'
@@ -24,21 +24,22 @@ export function HomePage() {
     }
   }, [recordToday])
 
-  /** 달력 날짜 선택 핸들러 - 과거 날짜 수동 기록 (이미 기록된 날짜는 무시) */
+  /** 달력 날짜 선택 핸들러 - 과거 날짜 수동 기록 (중복 여부는 addManual에서 처리) */
   const handleDateSelect = useCallback(async (date: string) => {
     const today = getTodayKST()
-    // 이미 기록된 날짜이면 무시
-    const existing = records.find(r => r.recordedDate === date)
-    if (existing) return
     // 과거 날짜만 수동 기록 허용
     if (date < today) {
       const result = await addManual(date)
       if (result === 'recorded') setToast(`${date} 기록을 추가했어요`)
+      else if (result === 'duplicate') setToast('이미 기록된 날짜예요')
     }
-  }, [records, addManual])
+  }, [addManual])
 
-  // 기록된 날짜 Set (미니 캘린더에서 O(1) 조회)
-  const recordedDateSet = new Set(records.map(r => r.recordedDate))
+  // 기록된 날짜 Set (미니 캘린더에서 O(1) 조회, records 변경 시에만 재생성)
+  const recordedDateSet = useMemo(
+    () => new Set(records.map(r => r.recordedDate)),
+    [records]
+  )
   // 이번 달 YYYY-MM 형식
   const currentYearMonth = getTodayKST().slice(0, 7)
 

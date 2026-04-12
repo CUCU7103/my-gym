@@ -58,6 +58,8 @@ export function MiniCalendar({ yearMonth, recordedDates, onDateSelect }: MiniCal
           return (
             <button
               key={date}
+              type="button"
+              disabled={isFuture}
               onClick={() => !isFuture && onDateSelect(date)}
               style={{
                 aspectRatio: '1',
