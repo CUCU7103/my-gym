@@ -17,6 +17,8 @@ export function RecordsPage() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   // 토스트 메시지 (null이면 숨김)
   const [toast, setToast] = useState<string | null>(null)
+  // useCallback으로 함수 참조 고정 — 인라인 함수 사용 시 Toast의 useEffect([onClose])가 매 렌더마다 재실행되어 타이머 초기화됨
+  const handleToastClose = useCallback(() => setToast(null), [])
 
   // 필터에 따라 기록 목록 필터링 (records 또는 filter가 변경될 때만 재계산)
   const filtered = useMemo(() => {
@@ -59,7 +61,7 @@ export function RecordsPage() {
       )}
 
       {/* 결과 알림 토스트 */}
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      {toast && <Toast message={toast} onClose={handleToastClose} />}
     </div>
   )
 }
