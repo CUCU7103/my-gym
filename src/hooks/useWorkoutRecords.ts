@@ -86,11 +86,10 @@ export function useWorkoutRecords(weeklyGoal: number) {
    */
   const cancelToday = useCallback(async (): Promise<'cancelled' | 'not_found'> => {
     const today = getTodayKST()
-    // 오늘 날짜의 모든 기록을 조회 후 일괄 삭제
-    const todayRecords = await db.workoutRecords.where('recordedDate').equals(today).toArray()
-    if (todayRecords.length === 0) return 'not_found'
+    // where().delete()로 단일 트랜잭션에서 일괄 삭제, 삭제 건수 반환
+    const deletedCount = await db.workoutRecords.where('recordedDate').equals(today).delete()
+    if (deletedCount === 0) return 'not_found'
 
-    await Promise.all(todayRecords.map(r => db.workoutRecords.delete(r.id!)))
     await refresh()
     return 'cancelled'
   }, [refresh])
