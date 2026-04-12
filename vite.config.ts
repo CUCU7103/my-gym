@@ -11,6 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'my-gym',
         short_name: 'my-gym',
+        start_url: '/',
         description: '운동 출석 기록 앱',
         theme_color: '#0f0f0f',
         background_color: '#0f0f0f',
