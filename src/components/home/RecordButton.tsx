@@ -1,12 +1,14 @@
 // src/components/home/RecordButton.tsx
 type RecordButtonProps = {
-  isTodayRecorded: boolean
-  sessionCount: number        // 오늘 기록한 세션 수
+  sessionCount: number  // 오늘 기록한 세션 수 (0이면 미기록 상태)
   onRecord: () => void
 }
 
-/** 오늘 운동 기록 버튼 — 완료 여부 및 세션 수에 따라 스타일과 텍스트가 변경됨 */
-export function RecordButton({ isTodayRecorded, sessionCount, onRecord }: RecordButtonProps) {
+/** 오늘 운동 기록 버튼 — 세션 수에 따라 스타일과 텍스트가 변경됨 */
+export function RecordButton({ sessionCount, onRecord }: RecordButtonProps) {
+  // sessionCount > 0이면 완료 상태
+  const isRecorded = sessionCount > 0
+
   return (
     <div>
       <button
@@ -22,16 +24,16 @@ export function RecordButton({ isTodayRecorded, sessionCount, onRecord }: Record
           color: '#fff',
           background: 'linear-gradient(135deg, var(--blue-dark), var(--blue))',
           // 완료 시 글로우 효과를 더 강하게 표시
-          boxShadow: isTodayRecorded
+          boxShadow: isRecorded
             ? '0 0 50px rgba(59,130,246,0.7), 0 8px 20px rgba(0,0,0,0.4)'
             : '0 0 30px rgba(59,130,246,0.4), 0 8px 20px rgba(0,0,0,0.4)',
           transition: 'box-shadow 0.3s ease',
         }}
       >
-        {isTodayRecorded ? `✓ 오늘 운동 완료 (${sessionCount})` : '오늘 운동 기록'}
+        {isRecorded ? `✓ 오늘 운동 완료 (${sessionCount})` : '오늘 운동 기록'}
       </button>
       {/* 완료 시에만 보조 텍스트 표시 */}
-      {isTodayRecorded && (
+      {isRecorded && (
         <p style={{
           textAlign: 'center',
           marginTop: '8px',
