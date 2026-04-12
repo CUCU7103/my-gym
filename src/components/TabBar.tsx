@@ -14,6 +14,7 @@ export function TabBar() {
   const { activeTab, setActiveTab } = useAppContext()
 
   return (
+    // flex 레이아웃에 의해 자연스럽게 하단에 고정됨 — App.tsx의 flex column 구조 참고
     <nav style={{
       display: 'flex',
       justifyContent: 'space-around',
@@ -21,8 +22,7 @@ export function TabBar() {
       padding: '10px 0 max(12px, env(safe-area-inset-bottom))',
       background: 'var(--surface-deep)',
       borderTop: '1px solid var(--border-subtle)',
-      position: 'sticky',
-      bottom: 0,
+      flexShrink: 0,
     }}>
       {TABS.map(tab => (
         <button
