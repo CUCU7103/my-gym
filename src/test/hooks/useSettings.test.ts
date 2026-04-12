@@ -28,4 +28,18 @@ describe('useSettings', () => {
     await act(async () => { await result.current.updateWeeklyGoal(5) })
     expect(result.current.settings.weeklyGoal).toBe(5)
   })
+
+  it('updateWeeklyGoal - 0 입력 시 1로 클램핑된다', async () => {
+    const { result } = renderHook(() => useSettings())
+    await act(async () => {})
+    await act(async () => { await result.current.updateWeeklyGoal(0) })
+    expect(result.current.settings.weeklyGoal).toBe(1)
+  })
+
+  it('updateWeeklyGoal - 8 입력 시 7로 클램핑된다', async () => {
+    const { result } = renderHook(() => useSettings())
+    await act(async () => {})
+    await act(async () => { await result.current.updateWeeklyGoal(8) })
+    expect(result.current.settings.weeklyGoal).toBe(7)
+  })
 })

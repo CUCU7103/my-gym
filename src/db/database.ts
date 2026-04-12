@@ -9,7 +9,7 @@ class GymDatabase extends Dexie {
   constructor() {
     super('my-gym-db')
     this.version(1).stores({
-      // recordedDate에 unique 인덱스 → 하루 1회 정책 DB 레벨 보장
+      // recordedDate는 일반 인덱스 — 하루 1회 정책은 애플리케이션 레벨(useWorkoutRecords)에서 강제
       workoutRecords: 'id, recordedDate, recordedAt',
       // settings는 id=1 단일 레코드
       userSettings: 'id',

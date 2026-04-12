@@ -83,4 +83,66 @@ describe('useWorkoutRecords', () => {
     expect(result.current.stats.isTodayRecorded).toBe(false)
     vi.useRealTimers()
   })
+
+  it('addManual - 미래 날짜는 future를 반환한다', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
+
+    const { result } = renderHook(() => useWorkoutRecords(3))
+    await act(async () => {})
+
+    let returnVal: string = ''
+    await act(async () => {
+      returnVal = await result.current.addManual('2026-04-13')
+    })
+    expect(returnVal).toBe('future')
+    vi.useRealTimers()
+  })
+
+  it('addManual - 새 날짜는 recorded를 반환하고 기록이 추가된다', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
+
+    const { result } = renderHook(() => useWorkoutRecords(3))
+    await act(async () => {})
+
+    let returnVal: string = ''
+    await act(async () => {
+      returnVal = await result.current.addManual('2026-04-10')
+    })
+    expect(returnVal).toBe('recorded')
+    expect(result.current.stats.totalCount).toBe(1)
+    vi.useRealTimers()
+  })
+
+  it('addManual - 이미 기록된 날짜는 duplicate를 반환한다', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
+
+    const { result } = renderHook(() => useWorkoutRecords(3))
+    await act(async () => {})
+
+    await act(async () => { await result.current.addManual('2026-04-10') })
+
+    let returnVal: string = ''
+    await act(async () => {
+      returnVal = await result.current.addManual('2026-04-10')
+    })
+    expect(returnVal).toBe('duplicate')
+    vi.useRealTimers()
+  })
+
+  it('deleteAllRecords 호출 시 모든 기록이 삭제된다', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
+
+    const { result } = renderHook(() => useWorkoutRecords(3))
+    await act(async () => {})
+    await act(async () => { await result.current.recordToday() })
+    expect(result.current.stats.totalCount).toBe(1)
+
+    await act(async () => { await result.current.deleteAllRecords() })
+    expect(result.current.stats.totalCount).toBe(0)
+    vi.useRealTimers()
+  })
 })
