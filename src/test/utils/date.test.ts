@@ -8,6 +8,9 @@ import {
   isThisMonthKST,
   formatDisplayDate,
   getRecent7DayDates,
+  getDayLabel,
+  getMonthDates,
+  getFirstDayOfWeek,
 } from '../../utils/date'
 
 describe('getTodayKST', () => {
@@ -86,5 +89,37 @@ describe('formatDisplayDate', () => {
   it('YYYY-MM-DD를 "4월 12일 일요일" 형식으로 변환한다', () => {
     const result = formatDisplayDate('2026-04-12')
     expect(result).toBe('4월 12일 일요일')
+  })
+})
+
+describe('getDayLabel', () => {
+  it('2026-04-12 (일요일)에 대해 "일"을 반환한다', () => {
+    const result = getDayLabel('2026-04-12')
+    expect(result).toBe('일')
+  })
+
+  it('2026-04-13 (월요일)에 대해 "월"을 반환한다', () => {
+    const result = getDayLabel('2026-04-13')
+    expect(result).toBe('월')
+  })
+})
+
+describe('getMonthDates', () => {
+  it('2026-04 기준으로 길이 30인 배열을 반환한다', () => {
+    const result = getMonthDates('2026-04')
+    expect(result).toHaveLength(30)
+  })
+
+  it('첫 원소는 2026-04-01, 마지막 원소는 2026-04-30이다', () => {
+    const result = getMonthDates('2026-04')
+    expect(result[0]).toBe('2026-04-01')
+    expect(result[29]).toBe('2026-04-30')
+  })
+})
+
+describe('getFirstDayOfWeek', () => {
+  it('2026-04의 첫 날(수요일)에 대해 3을 반환한다', () => {
+    const result = getFirstDayOfWeek('2026-04')
+    expect(result).toBe(3)
   })
 })
