@@ -11,11 +11,13 @@ export const recordsRoutes = Router()
 recordsRoutes.use(authMiddleware)
 
 // DB 행을 WorkoutRecord 타입으로 변환하는 헬퍼
+// client.ts에서 types.setTypeParser(1082)로 DATE를 문자열로 수신하므로
+// recorded_date는 항상 "YYYY-MM-DD" 문자열이다.
 function rowToRecord(row: Record<string, unknown>): WorkoutRecord {
   return {
     id: row.id as string,
     recordedAt: (row.recorded_at as Date).toISOString(),
-    recordedDate: (row.recorded_date as string).slice(0, 10), // DATE → YYYY-MM-DD
+    recordedDate: row.recorded_date as string,
     createdAt: (row.created_at as Date).toISOString(),
     source: row.source as 'today_button' | 'manual',
     label: (row.label as string | null) ?? undefined,

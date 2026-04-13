@@ -35,8 +35,12 @@ app.use('/api/auth', authRoutes)
 app.use('/api/records', recordsRoutes)
 app.use('/api/settings', settingsRoutes)
 
-app.listen(PORT, () => {
-  console.log(`🚀 서버 시작: http://localhost:${PORT}`)
-})
+// 테스트에서 import 시 서버를 자동 시작하지 않음
+// 직접 실행할 때만 listen (ts-node src/index.ts or node dist/index.js)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 서버 시작: http://localhost:${PORT}`)
+  })
+}
 
 export { app }
