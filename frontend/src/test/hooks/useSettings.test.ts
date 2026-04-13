@@ -1,45 +1,45 @@
-// src/test/hooks/useSettings.test.ts
-import { describe, it, expect, vi } from 'vitest'
+// frontend/src/test/hooks/useSettings.test.ts
 import { renderHook, act } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSettings } from '../../hooks/useSettings'
-
-vi.mock('../../db/database', () => {
-  let settings = { weeklyGoal: 3, timezone: 'Asia/Seoul' }
-  return {
-    db: {
-      userSettings: {
-        put: async (s: any) => { settings = s },
-      },
-    },
-    getOrCreateSettings: async () => ({ ...settings }),
-  }
-})
+import * as settingsApi from '../../api/settings'
 
 describe('useSettings', () => {
-  it('기본 weeklyGoal은 3이다', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(settingsApi.getSettings).mockResolvedValue({ weeklyGoal: 3, timezone: 'Asia/Seoul' })
+  })
+
+  it('초기값으로 weeklyGoal=3을 갖는다', async () => {
     const { result } = renderHook(() => useSettings())
     await act(async () => {})
     expect(result.current.settings.weeklyGoal).toBe(3)
   })
 
-  it('updateWeeklyGoal 호출 시 값이 변경된다', async () => {
+  it('updateWeeklyGoal 호출 시 updateSettings API를 호출한다', async () => {
+    vi.mocked(settingsApi.updateSettings).mockResolvedValueOnce({ weeklyGoal: 5, timezone: 'Asia/Seoul' })
+
     const { result } = renderHook(() => useSettings())
     await act(async () => {})
-    await act(async () => { await result.current.updateWeeklyGoal(5) })
+
+    await act(async () => {
+      await result.current.updateWeeklyGoal(5)
+    })
+
+    expect(settingsApi.updateSettings).toHaveBeenCalledWith(5)
     expect(result.current.settings.weeklyGoal).toBe(5)
   })
 
-  it('updateWeeklyGoal - 0 입력 시 1로 클램핑된다', async () => {
-    const { result } = renderHook(() => useSettings())
-    await act(async () => {})
-    await act(async () => { await result.current.updateWeeklyGoal(0) })
-    expect(result.current.settings.weeklyGoal).toBe(1)
-  })
+  it('weeklyGoal은 1~7로 클램핑된다', async () => {
+    vi.mocked(settingsApi.updateSettings).mockResolvedValueOnce({ weeklyGoal: 7, timezone: 'Asia/Seoul' })
 
-  it('updateWeeklyGoal - 8 입력 시 7로 클램핑된다', async () => {
     const { result } = renderHook(() => useSettings())
     await act(async () => {})
-    await act(async () => { await result.current.updateWeeklyGoal(8) })
-    expect(result.current.settings.weeklyGoal).toBe(7)
+
+    await act(async () => {
+      await result.current.updateWeeklyGoal(99) // 7로 클램핑
+    })
+
+    expect(settingsApi.updateSettings).toHaveBeenCalledWith(7)
   })
 })

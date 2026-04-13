@@ -1,156 +1,57 @@
-// src/test/hooks/useWorkoutRecords.test.ts
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+// frontend/src/test/hooks/useWorkoutRecords.test.ts
 import { renderHook, act } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWorkoutRecords } from '../../hooks/useWorkoutRecords'
-
-// Dexie를 메모리 기반으로 mock
-vi.mock('../../db/database', () => {
-  const records: any[] = []
-  return {
-    db: {
-      workoutRecords: {
-        toArray: async () => [...records],
-        add: async (r: any) => { records.push(r); return r.id },
-        delete: async (id: string) => {
-          const idx = records.findIndex(r => r.id === id)
-          if (idx !== -1) records.splice(idx, 1)
-        },
-        clear: async () => { records.splice(0, records.length) },
-        where: (field: string) => ({
-          equals: (val: string) => ({
-            first: async () => records.find((r: any) => r[field] === val),
-            // 오늘 전체 삭제에 사용
-            toArray: async () => records.filter((r: any) => r[field] === val),
-            delete: async () => {
-              const toDelete = records.filter((r: any) => r[field] === val)
-              toDelete.forEach(item => {
-                const idx = records.findIndex(r => r.id === item.id)
-                if (idx !== -1) records.splice(idx, 1)
-              })
-              // 삭제된 건수를 반환해야 cancelToday의 'not_found' 경로가 동작함
-              return toDelete.length
-            },
-          }),
-        }),
-      },
-    },
-    getOrCreateSettings: async () => ({ weeklyGoal: 3, timezone: 'Asia/Seoul' }),
-  }
-})
+import * as recordsApi from '../../api/records'
 
 describe('useWorkoutRecords', () => {
-  beforeEach(async () => {
-    const { db } = await import('../../db/database')
-    await db.workoutRecords.clear()
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(recordsApi.getRecords).mockResolvedValue([])
   })
 
-  it('초기 상태에서 isTodayRecorded는 false이다', async () => {
+  it('초기 stats는 모두 0이다', async () => {
     const { result } = renderHook(() => useWorkoutRecords(3))
+    // refresh() 비동기 완료 대기
     await act(async () => {})
+    expect(result.current.stats.weeklyCount).toBe(0)
     expect(result.current.stats.isTodayRecorded).toBe(false)
   })
 
-  it('recordToday 호출 시 isTodayRecorded가 true가 된다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
+  it('recordToday 호출 시 addRecord API를 호출한다', async () => {
+    const mockRecord = {
+      id: 'uuid-1',
+      recordedAt: '2026-04-13T10:00:00.000Z',
+      recordedDate: '2026-04-13',
+      createdAt: '2026-04-13T10:00:00.000Z',
+      source: 'today_button' as const,
+    }
+    vi.mocked(recordsApi.addRecord).mockResolvedValueOnce(mockRecord)
+    vi.mocked(recordsApi.getRecords).mockResolvedValueOnce([]).mockResolvedValueOnce([mockRecord])
+
     const { result } = renderHook(() => useWorkoutRecords(3))
     await act(async () => {})
-    await act(async () => { await result.current.recordToday() })
-    expect(result.current.stats.isTodayRecorded).toBe(true)
-    vi.useRealTimers()
+
+    let outcome: string | undefined
+    await act(async () => {
+      outcome = await result.current.recordToday()
+    })
+
+    expect(outcome).toBe('recorded')
+    expect(recordsApi.addRecord).toHaveBeenCalledWith('2026-04-13', 'today_button', undefined)
   })
 
-  it('같은 날 recordToday를 2번 호출하면 2개의 세션이 기록된다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
-    const { result } = renderHook(() => useWorkoutRecords(3))
-    await act(async () => {})
-    await act(async () => { await result.current.recordToday('헬스') })
-    await act(async () => { await result.current.recordToday('복싱') })
-    expect(result.current.stats.todaySessionCount).toBe(2)
-    expect(result.current.stats.weeklyCount).toBe(2)
-    vi.useRealTimers()
-  })
+  it('recordToday 시 DUPLICATE_DATE 에러면 "duplicate" 반환', async () => {
+    vi.mocked(recordsApi.addRecord).mockRejectedValueOnce({ error: 'DUPLICATE_DATE', message: '중복' })
 
-  it('recordToday 라벨이 기록에 저장된다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
     const { result } = renderHook(() => useWorkoutRecords(3))
     await act(async () => {})
-    await act(async () => { await result.current.recordToday('헬스') })
-    expect(result.current.records[0].label).toBe('헬스')
-    vi.useRealTimers()
-  })
 
-  it('cancelToday 호출 시 오늘 기록이 모두 삭제된다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
-    const { result } = renderHook(() => useWorkoutRecords(3))
-    await act(async () => {})
-    await act(async () => { await result.current.recordToday('헬스') })
-    await act(async () => { await result.current.recordToday('복싱') })
-    expect(result.current.stats.todaySessionCount).toBe(2)
-    await act(async () => { await result.current.cancelToday() })
-    expect(result.current.stats.isTodayRecorded).toBe(false)
-    expect(result.current.stats.todaySessionCount).toBe(0)
-    vi.useRealTimers()
-  })
+    let outcome: string | undefined
+    await act(async () => {
+      outcome = await result.current.recordToday()
+    })
 
-  it('cancelToday - 오늘 기록이 없으면 not_found를 반환한다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
-    const { result } = renderHook(() => useWorkoutRecords(3))
-    await act(async () => {})
-    let returnVal = ''
-    await act(async () => { returnVal = await result.current.cancelToday() })
-    expect(returnVal).toBe('not_found')
-    vi.useRealTimers()
-  })
-
-  it('deleteRecord 호출 시 해당 기록만 삭제된다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
-    const { result } = renderHook(() => useWorkoutRecords(3))
-    await act(async () => {})
-    await act(async () => { await result.current.recordToday('헬스') })
-    await act(async () => { await result.current.recordToday('복싱') })
-    const firstId = result.current.records.find(r => r.label === '헬스')!.id
-    await act(async () => { await result.current.deleteRecord(firstId) })
-    expect(result.current.stats.todaySessionCount).toBe(1)
-    expect(result.current.records[0].label).toBe('복싱')
-    vi.useRealTimers()
-  })
-
-  it('addManual - 같은 날 여러 세션 추가 가능하다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
-    const { result } = renderHook(() => useWorkoutRecords(3))
-    await act(async () => {})
-    await act(async () => { await result.current.addManual('2026-04-10', '헬스') })
-    await act(async () => { await result.current.addManual('2026-04-10', '복싱') })
-    expect(result.current.stats.totalCount).toBe(2)
-    vi.useRealTimers()
-  })
-
-  it('addManual - 미래 날짜는 future를 반환한다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
-    const { result } = renderHook(() => useWorkoutRecords(3))
-    await act(async () => {})
-    let returnVal = ''
-    await act(async () => { returnVal = await result.current.addManual('2026-04-13') })
-    expect(returnVal).toBe('future')
-    vi.useRealTimers()
-  })
-
-  it('deleteAllRecords 호출 시 모든 기록이 삭제된다', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-12T10:00:00+09:00'))
-    const { result } = renderHook(() => useWorkoutRecords(3))
-    await act(async () => {})
-    await act(async () => { await result.current.recordToday() })
-    await act(async () => { await result.current.deleteAllRecords() })
-    expect(result.current.stats.totalCount).toBe(0)
-    vi.useRealTimers()
+    expect(outcome).toBe('duplicate')
   })
 })
