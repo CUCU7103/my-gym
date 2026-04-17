@@ -10,6 +10,7 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-}
       NODE_ENV: production
+      ALLOWED_IPS: ${ALLOWED_IPS:-}
       PORT: 3000
     depends_on:
       db:
