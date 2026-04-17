@@ -6,21 +6,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   plugins: [
     react(),
+    // selfDestroying: 기존에 등록된 서비스워커를 자동으로 해제하고 이후 재등록하지 않음
+    // 배포마다 캐시가 꼬이는 문제를 근본적으로 해결
     VitePWA({
-      registerType: 'autoUpdate',
-      manifest: {
-        name: 'my-gym',
-        short_name: 'my-gym',
-        start_url: '/',
-        description: '운동 출석 기록 앱',
-        theme_color: '#0f0f0f',
-        background_color: '#0f0f0f',
-        display: 'standalone',
-        icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-        ],
-      },
+      selfDestroying: true,
     }),
   ],
 })

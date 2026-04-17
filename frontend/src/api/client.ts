@@ -2,7 +2,9 @@
 // 모든 API 호출의 기반이 되는 fetch 래퍼.
 // 액세스 토큰 자동 첨부 + 401 응답 시 토큰 갱신 후 1회 재시도를 처리한다.
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL as string
+// 프로덕션(Vercel)에서는 vercel.json rewrites로 /api/* → EC2 프록시
+// 로컬 개발 시에는 VITE_API_BASE_URL 환경변수로 백엔드 주소 지정
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 // 현재 액세스 토큰을 앱 전역에서 공유 (AuthContext에서 설정)
 let _accessToken: string | null = null
@@ -60,7 +62,9 @@ export async function apiFetch<T>(
   })
 
   // 401이면 토큰 갱신 후 1회 재시도
-  if (res.status === 401) {
+  // auth 엔드포인트(로그인/회원가입)는 갱신 없이 바로 에러 처리
+  const isAuthEndpoint = path.startsWith('/api/auth/login') || path.startsWith('/api/auth/register')
+  if (res.status === 401 && !isAuthEndpoint) {
     const newToken = await refreshAccessToken()
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`
@@ -69,8 +73,14 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    const err = await res.json() as ApiError
-    throw err
+    // body를 text로 먼저 읽어 JSON 파싱 실패를 방지
+    const text = await res.text()
+    try {
+      const err = JSON.parse(text) as ApiError
+      throw err
+    } catch {
+      throw { error: 'SERVER_ERROR', message: text || '서버 오류가 발생했습니다.' } as ApiError
+    }
   }
 
   // 204 No Content 응답은 빈 객체 반환

@@ -15,6 +15,13 @@ export function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    // 브라우저 기본 유효성 메시지 대신 한국어로 직접 검증
+    if (password.length < 8) {
+      setError('비밀번호는 8자 이상이어야 합니다.')
+      return
+    }
+
     setLoading(true)
     try {
       if (mode === 'login') {
@@ -74,7 +81,6 @@ export function AuthPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={8}
             style={{
               width: '100%',
               padding: '12px 14px',

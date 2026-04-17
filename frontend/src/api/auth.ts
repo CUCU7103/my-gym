@@ -1,5 +1,7 @@
 // frontend/src/api/auth.ts
-const BASE_URL = import.meta.env.VITE_API_BASE_URL as string
+// 프로덕션(Vercel)에서는 vercel.json rewrites로 /api/* → EC2 프록시
+// 로컬 개발 시에는 VITE_API_BASE_URL 환경변수로 백엔드 주소 지정
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 export type AuthUser = {
   userId: string
