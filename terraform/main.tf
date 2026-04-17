@@ -32,7 +32,7 @@ data "aws_ami" "ubuntu" {
 # 보안 그룹: SSH(22), HTTP(80), HTTPS(443), API(3000) 허용
 resource "aws_security_group" "my_gym" {
   name        = "my-gym-sg"
-  description = "my-gym EC2 보안 그룹"
+  description = "my-gym EC2 security group"
 
   ingress {
     from_port   = 22
