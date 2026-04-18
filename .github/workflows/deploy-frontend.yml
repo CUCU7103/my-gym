@@ -12,6 +12,11 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-frontend-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
@@ -43,7 +48,7 @@ jobs:
       - name: EC2에 정적 파일 배포 (rsync)
         run: |
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "ssh -i ~/.ssh/deploy_key" \
             frontend/dist/ \
             ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/my-gym/
 
