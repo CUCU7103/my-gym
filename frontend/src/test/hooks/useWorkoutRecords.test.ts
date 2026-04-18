@@ -19,11 +19,15 @@ describe('useWorkoutRecords', () => {
   })
 
   it('recordToday 호출 시 addRecord API를 호출한다', async () => {
+    // 날짜를 고정해 KST 기준 오늘 날짜를 예측 가능하게 만든다
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-18T10:00:00+09:00'))
+
     const mockRecord = {
       id: 'uuid-1',
-      recordedAt: '2026-04-13T10:00:00.000Z',
-      recordedDate: '2026-04-13',
-      createdAt: '2026-04-13T10:00:00.000Z',
+      recordedAt: '2026-04-18T01:00:00.000Z',
+      recordedDate: '2026-04-18',
+      createdAt: '2026-04-18T01:00:00.000Z',
       source: 'today_button' as const,
     }
     vi.mocked(recordsApi.addRecord).mockResolvedValueOnce(mockRecord)
@@ -38,7 +42,9 @@ describe('useWorkoutRecords', () => {
     })
 
     expect(outcome).toBe('recorded')
-    expect(recordsApi.addRecord).toHaveBeenCalledWith('2026-04-13', 'today_button', undefined)
+    expect(recordsApi.addRecord).toHaveBeenCalledWith('2026-04-18', 'today_button', undefined)
+
+    vi.useRealTimers()
   })
 
   it('recordToday 시 DUPLICATE_DATE 에러면 "duplicate" 반환', async () => {
