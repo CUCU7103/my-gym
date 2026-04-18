@@ -1,0 +1,49 @@
+# .github/workflows/deploy-backend.yml
+# main 브랜치 push 시 EC2 백엔드 자동 재배포
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: EC2에 SSH 접속해 백엔드 재배포
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /app
+
+            # 최신 코드 pull
+            git pull origin main
+
+            # .env에 최신 시크릿 반영
+            cat > /app/.env << EOF
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+            FRONTEND_ORIGIN=http://${{ secrets.EC2_HOST }}
+            EOF
+
+            # 재빌드 및 재시작
+            docker compose pull db || true
+            docker compose up --build -d
+
+            # 헬스체크: 최대 30초 대기
+            for i in $(seq 1 6); do
+              if curl -sf http://localhost:3000/health; then
+                echo "백엔드 정상 기동 확인"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "헬스체크 실패" && exit 1
