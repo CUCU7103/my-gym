@@ -9,6 +9,7 @@ export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -27,7 +28,7 @@ export function AuthPage() {
       if (mode === 'login') {
         await login(email, password)
       } else {
-        await register(email, password)
+        await register(email, password, inviteCode)
       }
     } catch (err: unknown) {
       const apiErr = err as ApiError
@@ -74,7 +75,7 @@ export function AuthPage() {
             }}
           />
         </div>
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: mode === 'register' ? 12 : 16 }}>
           <input
             type="password"
             placeholder="비밀번호 (8자 이상)"
@@ -93,6 +94,29 @@ export function AuthPage() {
             }}
           />
         </div>
+
+        {/* 회원가입 시에만 초대 코드 입력 필드 표시 */}
+        {mode === 'register' && (
+          <div style={{ marginBottom: 16 }}>
+            <input
+              type="text"
+              placeholder="초대 코드"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                fontSize: 14,
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        )}
 
         {error && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>

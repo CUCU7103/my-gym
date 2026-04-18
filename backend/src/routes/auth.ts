@@ -18,6 +18,10 @@ const credentialsSchema = z.object({
   password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다.'),
 })
 
+const registerSchema = credentialsSchema.extend({
+  inviteCode: z.string().min(1, '초대 코드를 입력하세요.'),
+})
+
 function generateAccessToken(userId: string): string {
   return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: ACCESS_TOKEN_TTL })
 }
@@ -28,12 +32,19 @@ function generateRefreshToken(userId: string): string {
 
 // POST /api/auth/register
 authRoutes.post('/register', async (req, res) => {
-  const parsed = credentialsSchema.safeParse(req.body)
+  const parsed = registerSchema.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'VALIDATION_ERROR', message: parsed.error.errors[0].message })
     return
   }
-  const { email, password } = parsed.data
+  const { email, password, inviteCode } = parsed.data
+
+  // 초대 코드 검증 — INVITE_CODE 환경변수가 설정된 경우에만 적용
+  const validCode = process.env.INVITE_CODE
+  if (validCode && inviteCode !== validCode) {
+    res.status(403).json({ error: 'INVALID_INVITE_CODE', message: '초대 코드가 올바르지 않습니다.' })
+    return
+  }
 
   try {
     // 이메일 중복 확인

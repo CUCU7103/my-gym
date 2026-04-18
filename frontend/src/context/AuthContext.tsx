@@ -14,7 +14,7 @@ type AuthContextValue = {
   // 로그인: 성공 시 resolve, 실패 시 에러 throw
   login: (email: string, password: string) => Promise<void>
   // 회원가입 후 자동 로그인
-  register: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, inviteCode: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -45,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ id: payload.userId, email })
   }
 
-  const register = async (email: string, password: string) => {
-    await apiRegister(email, password)
+  const register = async (email: string, password: string, inviteCode: string) => {
+    await apiRegister(email, password, inviteCode)
     // 회원가입 후 자동 로그인
     await login(email, password)
   }

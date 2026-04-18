@@ -12,12 +12,12 @@ export type LoginResponse = {
   accessToken: string
 }
 
-// 회원가입: 이메일 + 비밀번호 → { userId, email }
-export async function register(email: string, password: string): Promise<AuthUser> {
+// 회원가입: 이메일 + 비밀번호 + 초대 코드 → { userId, email }
+export async function register(email: string, password: string, inviteCode: string): Promise<AuthUser> {
   const res = await fetch(`${BASE_URL}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, inviteCode }),
     credentials: 'include',
   })
   const data = await res.json()
