@@ -91,23 +91,43 @@ resource "aws_instance" "my_gym" {
     volume_type = "gp3"
   }
 
-  # EC2 최초 실행 시 Docker + Docker Compose 설치
-  # .env 파일은 배포 후 SSH로 수동 배치 (JWT 시크릿 포함)
+  # EC2 최초 실행 시 Docker + Docker Compose + Nginx 설치
+  # .env 파일은 GitHub Actions 배포 워크플로우가 자동으로 생성
   user_data = <<-EOF
     #!/bin/bash
     set -e
     apt-get update
-    apt-get install -y docker.io docker-compose-v2 git
+    apt-get install -y docker.io docker-compose-v2 git nginx
 
     systemctl enable docker
     systemctl start docker
+    systemctl enable nginx
+    systemctl start nginx
+
+    # 프론트엔드 정적 파일 서빙 디렉토리
+    mkdir -p /var/www/my-gym
+    chown -R ubuntu:ubuntu /var/www/my-gym
+
+    # Nginx 설정: 포트 80 → /var/www/my-gym 서빙, SPA 라우팅 지원
+    cat > /etc/nginx/sites-available/my-gym << 'NGINX'
+server {
+    listen 80;
+    server_name _;
+    root /var/www/my-gym;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+NGINX
+
+    ln -sf /etc/nginx/sites-available/my-gym /etc/nginx/sites-enabled/my-gym
+    rm -f /etc/nginx/sites-enabled/default
+    nginx -t && systemctl reload nginx
 
     git clone ${var.repo_url} /app
     cd /app
-
-    # 배포 후 아래 명령 실행:
-    # scp .env ubuntu@<EC2_IP>:/app/.env
-    # ssh ubuntu@<EC2_IP> "cd /app && docker compose up -d"
     EOF
 
   tags = {
