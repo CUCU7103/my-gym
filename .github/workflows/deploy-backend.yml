@@ -27,8 +27,8 @@ jobs:
             # 최신 코드 pull
             git pull origin main
 
-            # .env에 최신 시크릿 반영
-            cat > /app/.env << EOF
+            # .env에 최신 시크릿 반영 (단따옴표 EOF: EC2 셸 확장 방지, GitHub Actions가 먼저 치환 후 전달)
+            cat > /app/.env << 'EOF'
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
             FRONTEND_ORIGIN=http://${{ secrets.EC2_HOST }}

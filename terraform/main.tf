@@ -101,6 +101,8 @@ resource "aws_instance" "my_gym" {
 
     systemctl enable docker
     systemctl start docker
+    # ubuntu 사용자가 sudo 없이 docker 명령 실행 가능하도록 그룹 추가
+    usermod -aG docker ubuntu
     systemctl enable nginx
     systemctl start nginx
 
