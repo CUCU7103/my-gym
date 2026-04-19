@@ -29,7 +29,7 @@ describe('useWorkoutContext', () => {
     expect(result.current.stats.isTodayRecorded).toBe(false)
   })
 
-  it('SettingsProvider 없이 useWorkoutContext를 사용하면 에러가 발생한다', () => {
+  it('WorkoutProvider 없이 useWorkoutContext를 사용하면 에러가 발생한다', () => {
     // WorkoutProvider 없이 훅 직접 호출 시 에러 발생 확인
     expect(() => {
       renderHook(() => useWorkoutContext())
