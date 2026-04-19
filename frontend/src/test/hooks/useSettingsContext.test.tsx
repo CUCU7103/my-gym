@@ -1,6 +1,7 @@
 // frontend/src/test/hooks/useSettingsContext.test.tsx
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, type ReactNode } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ReactNode } from 'react'
 import { SettingsProvider, useSettingsContext } from '../../context/SettingsContext'
 import * as settingsApi from '../../api/settings'
 
