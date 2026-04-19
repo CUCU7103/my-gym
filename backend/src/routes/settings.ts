@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { pool } from '../db/client'
 import { authMiddleware } from '../middleware/authMiddleware'
 import { asyncHandler } from '../middleware/asyncHandler'
+import { AppError } from '../errors/AppError'
 import type { UserSettings } from '../types'
 
 export const settingsRoutes = Router()
@@ -44,8 +45,7 @@ const updateSettingsSchema = z.object({
 settingsRoutes.put('/', asyncHandler(async (req, res) => {
   const parsed = updateSettingsSchema.safeParse(req.body)
   if (!parsed.success) {
-    res.status(400).json({ error: 'VALIDATION_ERROR', message: '주간 목표는 1~7 사이여야 합니다.' })
-    return
+    throw new AppError(400, 'VALIDATION_ERROR', '주간 목표는 1~7 사이여야 합니다.')
   }
   const { weeklyGoal } = parsed.data
 
