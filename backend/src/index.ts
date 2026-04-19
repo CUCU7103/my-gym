@@ -6,6 +6,7 @@ import dotenv from 'dotenv'
 import { authRoutes } from './routes/auth'
 import { recordsRoutes } from './routes/records'
 import { settingsRoutes } from './routes/settings'
+import { errorHandler } from './middleware/errorHandler'
 
 dotenv.config()
 
@@ -61,6 +62,9 @@ if (allowedIPs) {
 app.use('/api/auth', authRoutes)
 app.use('/api/records', recordsRoutes)
 app.use('/api/settings', settingsRoutes)
+
+// 전역 에러 핸들러 — 반드시 모든 라우트 등록 후 마지막에 위치해야 한다
+app.use(errorHandler)
 
 // 테스트에서 import 시 서버를 자동 시작하지 않음
 // 직접 실행할 때만 listen (ts-node src/index.ts or node dist/index.js)

@@ -4,6 +4,8 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
 import { pool } from '../db/client'
+import { asyncHandler } from '../middleware/asyncHandler'
+import { AppError } from '../errors/AppError'
 
 export const authRoutes = Router()
 
@@ -31,119 +33,103 @@ function generateRefreshToken(userId: string): string {
 }
 
 // POST /api/auth/register
-authRoutes.post('/register', async (req, res) => {
+authRoutes.post('/register', asyncHandler(async (req, res) => {
   const parsed = registerSchema.safeParse(req.body)
   if (!parsed.success) {
-    res.status(400).json({ error: 'VALIDATION_ERROR', message: parsed.error.errors[0].message })
-    return
+    throw new AppError(400, 'VALIDATION_ERROR', parsed.error.errors[0].message)
   }
   const { email, password, inviteCode } = parsed.data
 
   // 초대 코드 검증 — INVITE_CODE 환경변수가 설정된 경우에만 적용
   const validCode = process.env.INVITE_CODE
   if (validCode && inviteCode !== validCode) {
-    res.status(403).json({ error: 'INVALID_INVITE_CODE', message: '초대 코드가 올바르지 않습니다.' })
-    return
+    throw new AppError(403, 'INVALID_INVITE_CODE', '초대 코드가 올바르지 않습니다.')
   }
 
-  try {
-    // 이메일 중복 확인
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email])
-    if (existing.rows.length > 0) {
-      res.status(400).json({ error: 'EMAIL_TAKEN', message: '이미 사용 중인 이메일입니다.' })
-      return
-    }
-
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS)
-    const result = await pool.query(
-      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email',
-      [email, hashedPassword]
-    )
-    res.status(201).json({ userId: result.rows[0].id, email: result.rows[0].email })
-  } catch (err) {
-    console.error('register error:', err)
-    res.status(500).json({ error: 'SERVER_ERROR', message: '서버 오류가 발생했습니다.' })
+  // 이메일 중복 확인
+  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email])
+  if (existing.rows.length > 0) {
+    throw new AppError(400, 'EMAIL_TAKEN', '이미 사용 중인 이메일입니다.')
   }
-})
+
+  const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS)
+  const result = await pool.query(
+    'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email',
+    [email, hashedPassword]
+  )
+  res.status(201).json({ userId: result.rows[0].id, email: result.rows[0].email })
+}))
 
 // POST /api/auth/login
-authRoutes.post('/login', async (req, res) => {
+authRoutes.post('/login', asyncHandler(async (req, res) => {
   const parsed = credentialsSchema.safeParse(req.body)
   if (!parsed.success) {
-    res.status(400).json({ error: 'VALIDATION_ERROR', message: parsed.error.errors[0].message })
-    return
+    throw new AppError(400, 'VALIDATION_ERROR', parsed.error.errors[0].message)
   }
   const { email, password } = parsed.data
 
-  try {
-    const result = await pool.query('SELECT id, password FROM users WHERE email = $1', [email])
-    if (result.rows.length === 0) {
-      res.status(401).json({ error: 'INVALID_CREDENTIALS', message: '이메일 또는 비밀번호가 올바르지 않습니다.' })
-      return
-    }
-
-    const user = result.rows[0]
-    const isMatch = await bcrypt.compare(password, user.password)
-    if (!isMatch) {
-      res.status(401).json({ error: 'INVALID_CREDENTIALS', message: '이메일 또는 비밀번호가 올바르지 않습니다.' })
-      return
-    }
-
-    const accessToken = generateAccessToken(user.id)
-    const refreshToken = generateRefreshToken(user.id)
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
-
-    // 리프레시 토큰을 DB에 저장
-    await pool.query(
-      'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
-      [user.id, refreshToken, expiresAt]
-    )
-
-    // 리프레시 토큰은 httpOnly 쿠키로 전달 (JS 접근 불가)
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: REFRESH_TOKEN_TTL_MS,
-    })
-
-    res.json({ accessToken })
-  } catch (err) {
-    console.error('login error:', err)
-    res.status(500).json({ error: 'SERVER_ERROR', message: '서버 오류가 발생했습니다.' })
+  const result = await pool.query('SELECT id, password FROM users WHERE email = $1', [email])
+  if (result.rows.length === 0) {
+    throw new AppError(401, 'INVALID_CREDENTIALS', '이메일 또는 비밀번호가 올바르지 않습니다.')
   }
-})
+
+  const user = result.rows[0]
+  const isMatch = await bcrypt.compare(password, user.password)
+  if (!isMatch) {
+    throw new AppError(401, 'INVALID_CREDENTIALS', '이메일 또는 비밀번호가 올바르지 않습니다.')
+  }
+
+  const accessToken = generateAccessToken(user.id)
+  const refreshToken = generateRefreshToken(user.id)
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+
+  // 리프레시 토큰을 DB에 저장
+  await pool.query(
+    'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
+    [user.id, refreshToken, expiresAt]
+  )
+
+  // 리프레시 토큰은 httpOnly 쿠키로 전달 (JS 접근 불가)
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: REFRESH_TOKEN_TTL_MS,
+  })
+
+  res.json({ accessToken })
+}))
 
 // POST /api/auth/refresh
-authRoutes.post('/refresh', async (req, res) => {
+authRoutes.post('/refresh', asyncHandler(async (req, res) => {
   const token = req.cookies.refreshToken
   if (!token) {
-    res.status(401).json({ error: 'UNAUTHORIZED', message: '리프레시 토큰이 없습니다.' })
-    return
+    throw new AppError(401, 'UNAUTHORIZED', '리프레시 토큰이 없습니다.')
   }
 
+  let payload: { userId: string }
   try {
-    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as { userId: string }
-
-    // DB에서 토큰 유효성 확인 (로그아웃으로 삭제된 토큰 방지)
-    const result = await pool.query(
-      'SELECT id FROM refresh_tokens WHERE token = $1 AND expires_at > now()',
-      [token]
-    )
-    if (result.rows.length === 0) {
-      res.status(401).json({ error: 'UNAUTHORIZED', message: '만료되거나 무효화된 토큰입니다.' })
-      return
-    }
-
-    const accessToken = generateAccessToken(payload.userId)
-    res.json({ accessToken })
+    // jwt.verify는 토큰이 유효하지 않을 때 내부적으로 throw하므로 내부 try-catch가 필요하다
+    payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as { userId: string }
   } catch {
-    res.status(401).json({ error: 'UNAUTHORIZED', message: '리프레시 토큰이 유효하지 않습니다.' })
+    throw new AppError(401, 'UNAUTHORIZED', '리프레시 토큰이 유효하지 않습니다.')
   }
-})
+
+  // DB에서 토큰 유효성 확인 (로그아웃으로 삭제된 토큰 방지)
+  const result = await pool.query(
+    'SELECT id FROM refresh_tokens WHERE token = $1 AND expires_at > now()',
+    [token]
+  )
+  if (result.rows.length === 0) {
+    throw new AppError(401, 'UNAUTHORIZED', '만료되거나 무효화된 토큰입니다.')
+  }
+
+  const accessToken = generateAccessToken(payload.userId)
+  res.json({ accessToken })
+}))
 
 // POST /api/auth/logout
-authRoutes.post('/logout', async (req, res) => {
+authRoutes.post('/logout', asyncHandler(async (req, res) => {
   const token = req.cookies.refreshToken
   if (token) {
     // DB에서 리프레시 토큰 삭제 (무효화)
@@ -151,4 +137,4 @@ authRoutes.post('/logout', async (req, res) => {
   }
   res.clearCookie('refreshToken')
   res.json({ ok: true })
-})
+}))
