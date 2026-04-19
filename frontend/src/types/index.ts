@@ -1,18 +1,6 @@
 // src/types/index.ts
-
-export type WorkoutRecord = {
-  id: string            // crypto.randomUUID()
-  recordedAt: string    // ISO datetime (기록 생성 시각)
-  recordedDate: string  // YYYY-MM-DD (Asia/Seoul 기준, 통계 계산 기준)
-  createdAt: string     // ISO datetime
-  source: 'today_button' | 'manual'
-  label?: string        // 운동 종류 (예: '헬스', '복싱') — 선택 입력
-}
-
-export type UserSettings = {
-  weeklyGoal: number    // 1~7, 기본값 3
-  timezone: 'Asia/Seoul'
-}
+// WorkoutRecord·UserSettings는 shared/types.ts에서 관리된다
+export type { WorkoutRecord, UserSettings } from '@shared/types'
 
 export type ActiveTab = 'home' | 'records' | 'settings'
 
