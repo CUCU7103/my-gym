@@ -75,12 +75,14 @@ export async function apiFetch<T>(
   if (!res.ok) {
     // body를 text로 먼저 읽어 JSON 파싱 실패를 방지
     const text = await res.text()
+    let errBody: ApiError
     try {
-      const err = JSON.parse(text) as ApiError
-      throw err
+      // JSON 파싱 실패만 catch — 파싱 성공 시 서버 에러 코드 그대로 throw
+      errBody = JSON.parse(text) as ApiError
     } catch {
       throw { error: 'SERVER_ERROR', message: text || '서버 오류가 발생했습니다.' } as ApiError
     }
+    throw errBody
   }
 
   // 204 No Content 응답은 빈 객체 반환
