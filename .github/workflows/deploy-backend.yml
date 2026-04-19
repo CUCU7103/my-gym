@@ -36,6 +36,7 @@ jobs:
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
             FRONTEND_ORIGIN=http://${{ secrets.EC2_HOST }}
+            INVITE_CODE=${{ secrets.INVITE_CODE }}
             EOF
 
             # 재빌드 및 재시작
