@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "ts-node -r tsconfig-paths/register src/index.ts",
     "build": "tsc",
-    "start": "node dist/src/index.js",
+    "start": "node -r tsconfig-paths/register dist/src/index.js",
     "test": "jest --runInBand",
     "migrate": "ts-node -r tsconfig-paths/register src/db/migrate.ts"
   },
