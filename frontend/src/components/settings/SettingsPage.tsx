@@ -1,5 +1,6 @@
 // src/components/settings/SettingsPage.tsx
-import { useAppContext } from '../../context/AppContext'
+import { useSettingsContext } from '../../context/SettingsContext'
+import { useWorkoutContext } from '../../context/WorkoutContext'
 import { GoalStepper } from './GoalStepper'
 import { ResetDataButton } from './ResetDataButton'
 
@@ -25,7 +26,8 @@ const rowStyle: React.CSSProperties = {
 
 /** 설정 화면 — 주간 목표 스테퍼, 데이터 정보, 데이터 초기화 기능 제공 */
 export function SettingsPage() {
-  const { settings, updateWeeklyGoal, stats, deleteAllRecords } = useAppContext()
+  const { settings, updateWeeklyGoal } = useSettingsContext()
+  const { stats, deleteAllRecords } = useWorkoutContext()
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '16px' }}>

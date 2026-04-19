@@ -1,17 +1,22 @@
-// frontend/src/test/hooks/useSettings.test.ts
+// frontend/src/test/hooks/useSettingsContext.test.tsx
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useSettings } from '../../hooks/useSettings'
+import { describe, it, expect, vi, beforeEach, type ReactNode } from 'vitest'
+import { SettingsProvider, useSettingsContext } from '../../context/SettingsContext'
 import * as settingsApi from '../../api/settings'
 
-describe('useSettings', () => {
+// SettingsProvider로 감싸주는 wrapper
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <SettingsProvider>{children}</SettingsProvider>
+)
+
+describe('useSettingsContext', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(settingsApi.getSettings).mockResolvedValue({ weeklyGoal: 3, timezone: 'Asia/Seoul' })
   })
 
   it('초기값으로 weeklyGoal=3을 갖는다', async () => {
-    const { result } = renderHook(() => useSettings())
+    const { result } = renderHook(() => useSettingsContext(), { wrapper })
     await act(async () => {})
     expect(result.current.settings.weeklyGoal).toBe(3)
   })
@@ -19,7 +24,7 @@ describe('useSettings', () => {
   it('updateWeeklyGoal 호출 시 updateSettings API를 호출한다', async () => {
     vi.mocked(settingsApi.updateSettings).mockResolvedValueOnce({ weeklyGoal: 5, timezone: 'Asia/Seoul' })
 
-    const { result } = renderHook(() => useSettings())
+    const { result } = renderHook(() => useSettingsContext(), { wrapper })
     await act(async () => {})
 
     await act(async () => {
@@ -33,7 +38,7 @@ describe('useSettings', () => {
   it('weeklyGoal은 1~7로 클램핑된다', async () => {
     vi.mocked(settingsApi.updateSettings).mockResolvedValueOnce({ weeklyGoal: 7, timezone: 'Asia/Seoul' })
 
-    const { result } = renderHook(() => useSettings())
+    const { result } = renderHook(() => useSettingsContext(), { wrapper })
     await act(async () => {})
 
     await act(async () => {

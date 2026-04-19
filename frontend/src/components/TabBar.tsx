@@ -1,6 +1,10 @@
 // src/components/TabBar.tsx
-import { useAppContext } from '../context/AppContext'
 import type { ActiveTab } from '../types'
+
+type TabBarProps = {
+  activeTab: ActiveTab
+  onTabChange: (tab: ActiveTab) => void
+}
 
 // 하단 탭 메뉴 항목 목록 (id, 레이블, 아이콘)
 const TABS: { id: ActiveTab; label: string; icon: string }[] = [
@@ -10,9 +14,7 @@ const TABS: { id: ActiveTab; label: string; icon: string }[] = [
 ]
 
 /** 하단 고정 탭 바 - 화면 전환 네비게이션 담당 */
-export function TabBar() {
-  const { activeTab, setActiveTab } = useAppContext()
-
+export function TabBar({ activeTab, onTabChange }: TabBarProps) {
   return (
     // flex 레이아웃에 의해 자연스럽게 하단에 고정됨 — App.tsx의 flex column 구조 참고
     <nav style={{
@@ -27,7 +29,7 @@ export function TabBar() {
       {TABS.map(tab => (
         <button
           key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
+          onClick={() => onTabChange(tab.id)}
           style={{
             background: 'none',
             border: 'none',

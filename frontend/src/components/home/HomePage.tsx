@@ -1,6 +1,7 @@
 // src/components/home/HomePage.tsx
 import { useState, useCallback, useMemo } from 'react'
-import { useAppContext } from '../../context/AppContext'
+import { useWorkoutContext } from '../../context/WorkoutContext'
+import { useSettingsContext } from '../../context/SettingsContext'
 import { getTodayKST } from '../../utils/date'
 import { TodayHeader } from './TodayHeader'
 import { RecordButton } from './RecordButton'
@@ -15,7 +16,8 @@ import { TodaySessionList } from './TodaySessionList'
 
 /** 홈 화면 - 오늘의 운동 기록 버튼, 주간 도트, 통계 카드, 목표 바, 미니 캘린더로 구성 */
 export function HomePage() {
-  const { stats, settings, records, recordToday, cancelToday, addManual } = useAppContext()
+  const { stats, records, recordToday, cancelToday, addManual } = useWorkoutContext()
+  const { settings } = useSettingsContext()
   // 토스트 메시지 상태 (null이면 미표시)
   const [toast, setToast] = useState<string | null>(null)
   // 운동 취소 확인 모달 표시 여부

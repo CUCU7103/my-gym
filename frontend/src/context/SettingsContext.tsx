@@ -1,10 +1,16 @@
-// frontend/src/hooks/useSettings.ts
-import { useState, useEffect, useCallback } from 'react'
+// frontend/src/context/SettingsContext.tsx
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { getSettings, updateSettings } from '../api/settings'
 import type { UserSettings } from '../types'
 
-// 사용자 설정 관리 훅 — 서버 API에서 설정을 읽고 업데이트한다
-export function useSettings() {
+type SettingsContextValue = {
+  settings: UserSettings
+  updateWeeklyGoal: (goal: number) => Promise<void>
+}
+
+const SettingsContext = createContext<SettingsContextValue | null>(null)
+
+export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>({
     weeklyGoal: 3,
     timezone: 'Asia/Seoul',
@@ -31,5 +37,16 @@ export function useSettings() {
     }
   }, [])
 
-  return { settings, updateWeeklyGoal }
+  return (
+    <SettingsContext.Provider value={{ settings, updateWeeklyGoal }}>
+      {children}
+    </SettingsContext.Provider>
+  )
+}
+
+/** SettingsContext를 사용하는 커스텀 훅 */
+export function useSettingsContext() {
+  const ctx = useContext(SettingsContext)
+  if (!ctx) throw new Error('useSettingsContext must be used within SettingsProvider')
+  return ctx
 }

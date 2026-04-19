@@ -1,6 +1,6 @@
 // src/components/records/RecordsPage.tsx
 import { useState, useMemo, useCallback } from 'react'
-import { useAppContext } from '../../context/AppContext'
+import { useWorkoutContext } from '../../context/WorkoutContext'
 import { isThisWeekKST, isThisMonthKST } from '../../utils/date'
 import { FilterChips, type FilterType } from './FilterChips'
 import { RecordList } from './RecordList'
@@ -10,7 +10,7 @@ import { Toast } from '../shared/Toast'
 
 /** 기록 화면 — 운동 기록 목록 조회, 필터링, 삭제, 수동 날짜 추가 기능 제공 */
 export function RecordsPage() {
-  const { records, stats, deleteRecord, addManual } = useAppContext()
+  const { records, stats, deleteRecord, addManual } = useWorkoutContext()
   // 현재 선택된 필터 (전체 / 이번 달 / 이번 주)
   const [filter, setFilter] = useState<FilterType>('all')
   // 날짜 선택 모달 표시 여부
