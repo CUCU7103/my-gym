@@ -17,8 +17,8 @@ export function getAccessToken(): string | null {
   return _accessToken
 }
 
-// 리프레시 토큰으로 새 액세스 토큰을 가져오는 함수
-async function refreshAccessToken(): Promise<string | null> {
+// 리프레시 토큰으로 새 액세스 토큰을 가져오는 함수 (auth.ts에서도 재사용)
+export async function refreshAccessToken(): Promise<string | null> {
   try {
     const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
       method: 'POST',

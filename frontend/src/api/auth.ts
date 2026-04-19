@@ -1,9 +1,7 @@
 // frontend/src/api/auth.ts
-// refreshToken만 raw fetch — 앱 시작 시 조용한 재인증, 실패 시 null 반환
 // login·register·logout은 apiFetch 사용 — 일반 API 호출과 동일하게 에러 처리
-import { apiFetch } from './client'
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+// refreshToken은 refreshAccessToken 내부 구현 재사용 — 앱 초기화 시 조용한 재인증
+import { apiFetch, refreshAccessToken } from './client'
 
 export type AuthUser = {
   userId: string
@@ -32,14 +30,11 @@ export async function login(email: string, password: string): Promise<LoginRespo
 }
 
 // 토큰 갱신: 쿠키의 리프레시 토큰 → 새 액세스 토큰
-// 앱 초기화 시 자동 로그인에 사용 — 실패해도 에러를 던지지 않고 null 반환
+// 앱 초기화 시 자동 로그인에 사용 — 네트워크 오류 포함 모든 실패에서 null 반환
 export async function refreshToken(): Promise<LoginResponse | null> {
-  const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  })
-  if (!res.ok) return null
-  return res.json() as Promise<LoginResponse>
+  const newToken = await refreshAccessToken()
+  if (!newToken) return null
+  return { accessToken: newToken }
 }
 
 // 로그아웃: 리프레시 토큰 쿠키 삭제
