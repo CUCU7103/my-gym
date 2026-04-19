@@ -5,19 +5,21 @@
 # 빌드 스테이지: TypeScript 컴파일 (devDependencies 포함)
 FROM node:20-alpine AS builder
 
-WORKDIR /workspace
-
-# shared 디렉토리 복사 (백엔드 tsconfig paths가 참조)
-COPY shared ./shared
-
-# 백엔드 의존성 설치
 WORKDIR /workspace/backend
+
+# 의존성 먼저 설치 (레이어 캐시 활용)
 COPY backend/package*.json ./
 RUN npm ci
 
-COPY backend/tsconfig.json ./
+COPY backend/tsconfig.json backend/tsconfig.docker.json ./
+
+# shared/ 타입을 backend/src/shared/에 복사 (tsconfig paths: @shared/* → src/shared/*)
+COPY shared ./src/shared
+
+# 백엔드 소스 복사
 COPY backend/src ./src
-RUN npx tsc
+
+RUN npx tsc --project tsconfig.docker.json
 
 # 프로덕션 이미지: 컴파일된 JS만 포함, devDependencies 제외
 FROM node:20-alpine
