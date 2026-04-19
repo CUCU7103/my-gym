@@ -41,7 +41,7 @@ my-gym/                         ← 모노레포 루트
     │
     ▼
 Vercel (프론트엔드)
-https://gymlog-qkrwnsrb224-gmailcoms-projects.vercel.app
+https://gymlog-wheat.vercel.app
     │
     │  /api/* 요청은 vercel.json rewrites로 프록시
     ▼
@@ -157,7 +157,7 @@ cd frontend
 vercel --prod
 ```
 
-**Production URL:** `https://gymlog-qkrwnsrb224-gmailcoms-projects.vercel.app`
+**Production URL:** `https://gymlog-wheat.vercel.app`
 
 Vercel은 `frontend/vercel.json`의 rewrites 설정으로 `/api/*` 요청을 EC2 백엔드로 프록시한다.
 
