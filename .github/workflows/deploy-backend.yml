@@ -35,7 +35,7 @@ jobs:
             cat > /app/.env << 'EOF'
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
-            FRONTEND_ORIGIN=http://${{ secrets.EC2_HOST }}
+            FRONTEND_ORIGIN=https://gymlog-wheat.vercel.app
             INVITE_CODE=${{ secrets.INVITE_CODE }}
             EOF
 
